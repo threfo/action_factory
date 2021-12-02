@@ -1,0 +1,83 @@
+name: Build and Push dist to OSS
+on:
+  push:
+    tags:
+      - release/*
+jobs:
+  action_parse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tag parse
+        uses: AutumnWhj/tag-parse-action@master
+        with:
+          githubToken: ${{ secrets.ACCESS_TOKEN }}
+  action_build:
+    needs: action_parse
+    runs-on: ubuntu-latest
+    # 使用并发取消任何当前作业或运行
+    concurrency:
+      group: ${{ env.BRANCH }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout private repository
+        uses: actions/checkout@master
+        with:
+          repository: threfo/${{ env.REPOSITORY }}
+          token: ${{ secrets.ACCESS_TOKEN }}
+          ref: ${{ env.BRANCH }}
+          
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+
+      - name: Build
+        run: yarn build --filePath="${{ env.BRANCH }}/default"
+
+      - name: Get current time
+        uses: 1466587594/get-current-time@v2
+        id: current-time
+        with:
+          format: YYMMDDHHmm
+          utcOffset: '+08:00'
+
+      - name: Use current time
+        env:
+          F_TIME: '${{ steps.current-time.outputs.formattedTime }}'
+        run: echo "NOW=$F_TIME" >> $GITHUB_ENV
+      
+      - name: Upload COS
+        uses: zkqiang/tencent-cos-action@v0.1.0
+        with:
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.BRANCH }}/default --ignore *.map
+          secret_id: ${{ secrets.OSS_SECRET_ID }}
+          secret_key: ${{ secrets.OSS_SECRET_KEY }}
+          bucket: ${{ secrets.OSS_BUCKET }}
+          region: ${{ secrets.OSS_REGION }}
+
+      - name: Upload COS Backup release
+        uses: zkqiang/tencent-cos-action@v0.1.0
+        with:
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.BRANCH }}/${{ env.NOW }} --ignore *.map
+          secret_id: ${{ secrets.OSS_SECRET_ID }}
+          secret_key: ${{ secrets.OSS_SECRET_KEY }}
+          bucket: ${{ secrets.OSS_BUCKET }}
+          region: ${{ secrets.OSS_REGION }}
+
+      - name: Notify WeChat Work success
+        if: ${{ success() }}
+        env:
+          BOT_KEY: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
+          POST_MESSAGE: 🎉 项目${{ env.REPOSITORY }}，分支${{ env.BRANCH }}构建成功。--- Github Actions
+        uses: chhpt/wechat-work-messenger@v1.0.0
+
+      - name: Notify WeChat Work failure
+        if: ${{ failure() }}
+        env:
+          BOT_KEY: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
+          POST_MESSAGE: ❌ 项目${{ env.REPOSITORY }}，分支${{ env.BRANCH }}构建失败。--- Github Actions
+        uses: chhpt/wechat-work-messenger@v1.0.0
+
+
