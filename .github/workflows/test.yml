@@ -3,22 +3,19 @@ on:
   push:
     tags:
       - release/*
+# 使用并发取消任何当前作业或运行
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  action_parse:
+  action_tigger:
     runs-on: ubuntu-latest
     steps:
       - name: Tag parse
         uses: AutumnWhj/tag-parse-action@master
         with:
           githubToken: ${{ secrets.ACCESS_TOKEN }}
-  action_build:
-    needs: action_parse
-    runs-on: ubuntu-latest
-    # 使用并发取消任何当前作业或运行
-    concurrency:
-      group: ${{ env.BRANCH }}
-      cancel-in-progress: true
-    steps:
+
       - name: Checkout private repository
         uses: actions/checkout@master
         with:
@@ -34,7 +31,7 @@ jobs:
         uses: bahmutov/npm-install@v1
 
       - name: Build
-        run: yarn build --filePath="${{ env.BRANCH }}/default"
+        run: yarn build --filePath="${{ env.BRANCH }}/default --syncBranch=${{ env.syncBranch }}"
 
       - name: Get current time
         uses: 1466587594/get-current-time@v2
@@ -51,7 +48,7 @@ jobs:
       - name: Upload COS
         uses: zkqiang/tencent-cos-action@v0.1.0
         with:
-          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.BRANCH }}/default --ignore *.map
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.syncBranch }}/default --ignore *.map
           secret_id: ${{ secrets.OSS_SECRET_ID }}
           secret_key: ${{ secrets.OSS_SECRET_KEY }}
           bucket: ${{ secrets.OSS_BUCKET }}
@@ -60,24 +57,28 @@ jobs:
       - name: Upload COS Backup release
         uses: zkqiang/tencent-cos-action@v0.1.0
         with:
-          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.BRANCH }}/${{ env.NOW }} --ignore *.map
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.syncBranch }}/${{ env.NOW }} --ignore *.map
           secret_id: ${{ secrets.OSS_SECRET_ID }}
           secret_key: ${{ secrets.OSS_SECRET_KEY }}
           bucket: ${{ secrets.OSS_BUCKET }}
           region: ${{ secrets.OSS_REGION }}
 
+      - name: Sync privatisation project
+        if: ${{ startsWith( env.syncBranch, 'release/') }}
+        run: echo "test test test test"
+
       - name: Notify WeChat Work success
         if: ${{ success() }}
         env:
           BOT_KEY: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
-          POST_MESSAGE: 🎉 项目${{ env.REPOSITORY }}，分支${{ env.BRANCH }}构建成功。--- Github Actions
+          POST_MESSAGE: 🎉 项目${{ env.REPOSITORY }}，分支${{ env.syncBranch }}构建成功。--- Github Actions
         uses: chhpt/wechat-work-messenger@v1.0.0
 
       - name: Notify WeChat Work failure
         if: ${{ failure() }}
         env:
           BOT_KEY: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
-          POST_MESSAGE: ❌ 项目${{ env.REPOSITORY }}，分支${{ env.BRANCH }}构建失败。--- Github Actions
+          POST_MESSAGE: ❌ 项目${{ env.REPOSITORY }}，分支${{ env.syncBranch }}构建失败。--- Github Actions
         uses: chhpt/wechat-work-messenger@v1.0.0
 
 
