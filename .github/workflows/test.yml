@@ -1,4 +1,4 @@
-name: Build and Push dist to OSS
+name: Test
 on:
   push:
     tags:
