@@ -30,7 +30,7 @@ jobs:
         uses: bahmutov/npm-install@v1
 
       - name: ${{ env.pusherName }} 触发了构建 -- build
-        run: yarn build --filePath="${{ env.BRANCH }}/default" --syncBranch="${{ env.syncBranch }}"
+        run: yarn build --filePath="${{ env.syncBranch }}/default" --syncBranch="${{ env.syncBranch }}"
 
       - name: Get current time
         uses: 1466587594/get-current-time@v2
@@ -67,9 +67,9 @@ jobs:
         uses: AutumnWhj/sync-branches-action@master
         with:
           githubToken: ${{ secrets.ACCESS_TOKEN }}
+          repository: threfo/${{ env.REPOSITORY }}
           headBranch: ${{ env.BRANCH }}
           syncBranches: ${{ env.syncBranch }}
-          wechatKey: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
 
       - name: Notify WeChat Work success
         if: ${{ success() }}
