@@ -3,6 +3,8 @@ on:
   push:
     tags:
       - release/*
+  release:
+    types: [created]
 # 使用并发取消任何当前作业或运行
 concurrency:
   group: ${{ github.ref }}
