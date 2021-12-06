@@ -33,7 +33,7 @@ jobs:
         uses: bahmutov/npm-install@v1
 
       - name: Build
-        run: yarn build --filePath="${{ env.BRANCH }}/default --syncBranch=${{ env.syncBranch }}"
+        run: yarn build --filePath="${{ env.BRANCH }}/default" --syncBranch="${{ env.syncBranch }}"
 
       - name: Get current time
         uses: 1466587594/get-current-time@v2
