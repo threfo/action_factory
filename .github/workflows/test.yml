@@ -2,9 +2,9 @@ name: Test
 on:
   push:
     tags:
-      - release/*
-  release:
-    types: [created]
+      - '*'
+  # release:
+  #   types: [created]
 # 使用并发取消任何当前作业或运行
 concurrency:
   group: ${{ github.ref }}
@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
 
-      - name: Build
+      - name: ${{ env.pusherName }} 触发了构建 -- build
         run: yarn build --filePath="${{ env.BRANCH }}/default" --syncBranch="${{ env.syncBranch }}"
 
       - name: Get current time
@@ -67,7 +67,12 @@ jobs:
 
       - name: Sync privatisation project
         if: ${{ startsWith( env.syncBranch, 'release/') }}
-        run: echo "test test test test"
+        uses: AutumnWhj/sync-branches-action@master
+        with:
+          githubToken: ${{ secrets.ACCESS_TOKEN }}
+          headBranch: ${{ env.BRANCH }}
+          syncBranches: ${{ env.syncBranch }}
+          wechatKey: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
 
       - name: Notify WeChat Work success
         if: ${{ success() }}
