@@ -1,22 +1,21 @@
 name: Build and Push dist to OSS
 on:
-  push:
-    tags:
-      - '*'
+  release:
+    types: [created]
 # 使用并发取消任何当前作业或运行
 concurrency:
-  group: ${{ github.ref }}
+  group: ${github.ref%/20*}
   cancel-in-progress: true
 jobs:
   action_tigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Tag parse
+      - name: 从tag中解析出当前构建的分支，仓库等，并暴露到环境变量中
         uses: AutumnWhj/tag-parse-action@master
         with:
           githubToken: ${{ secrets.ACCESS_TOKEN }}
 
-      - name: Checkout private repository
+      - name: 拉取私有仓库的代码
         uses: actions/checkout@master
         with:
           repository: threfo/${{ env.REPOSITORY }}
@@ -30,8 +29,8 @@ jobs:
       - name: Install dependencies
         uses: bahmutov/npm-install@v1
 
-      - name: Build
-        run: yarn build --filePath="${{ env.BRANCH }}/default"
+      - name: 项目构建
+        run: yarn build --filePath="${{ env.syncBranch }}/default" --syncBranch="${{ env.syncBranch }}"
 
       - name: Get current time
         uses: 1466587594/get-current-time@v2
@@ -45,36 +44,45 @@ jobs:
           F_TIME: '${{ steps.current-time.outputs.formattedTime }}'
         run: echo "NOW=$F_TIME" >> $GITHUB_ENV
       
-      - name: Upload COS
+      - name: 上传到腾讯云COS
         uses: zkqiang/tencent-cos-action@v0.1.0
         with:
-          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.BRANCH }}/default --ignore *.map
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.syncBranch }}/default --ignore *.map
           secret_id: ${{ secrets.OSS_SECRET_ID }}
           secret_key: ${{ secrets.OSS_SECRET_KEY }}
           bucket: ${{ secrets.OSS_BUCKET }}
           region: ${{ secrets.OSS_REGION }}
 
-      - name: Upload COS Backup release
+      - name: 上传到腾讯云COS-备份版本
         uses: zkqiang/tencent-cos-action@v0.1.0
         with:
-          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.BRANCH }}/${{ env.NOW }} --ignore *.map
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/${{ env.syncBranch }}/${{ env.NOW }} --ignore *.map
           secret_id: ${{ secrets.OSS_SECRET_ID }}
           secret_key: ${{ secrets.OSS_SECRET_KEY }}
           bucket: ${{ secrets.OSS_BUCKET }}
           region: ${{ secrets.OSS_REGION }}
 
-      - name: Notify WeChat Work success
+      - name: 同步私有化分支
+        if: ${{ startsWith( env.syncBranch, 'release/') }}
+        uses: AutumnWhj/sync-branches-action@master
+        with:
+          githubToken: ${{ secrets.ACCESS_TOKEN }}
+          repository: threfo/${{ env.REPOSITORY }}
+          headBranch: ${{ env.BRANCH }}
+          syncBranches: ${{ env.syncBranch }}
+
+      - name: 构建成功消息
         if: ${{ success() }}
         env:
           BOT_KEY: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
-          POST_MESSAGE: 🎉 项目${{ env.REPOSITORY }}，分支${{ env.BRANCH }}构建成功。--- Github Actions
+          POST_MESSAGE: 🎉 项目${{ env.REPOSITORY }}，分支${{ env.syncBranch }}构建成功。--- Github Actions
         uses: chhpt/wechat-work-messenger@v1.0.0
 
-      - name: Notify WeChat Work failure
+      - name: 构建失败消息
         if: ${{ failure() }}
         env:
           BOT_KEY: ${{ secrets.WORK_WECHAT_GITHUB_ROBOT_KEY }}
-          POST_MESSAGE: ❌ 项目${{ env.REPOSITORY }}，分支${{ env.BRANCH }}构建失败。--- Github Actions
+          POST_MESSAGE: ❌ 项目${{ env.REPOSITORY }}，分支${{ env.syncBranch }}构建失败。--- Github Actions
         uses: chhpt/wechat-work-messenger@v1.0.0
 
 
