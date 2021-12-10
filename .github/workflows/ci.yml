@@ -4,7 +4,7 @@ on:
     types: [created]
 # 使用并发取消任何当前作业或运行
 concurrency:
-  group: ${github.ref%/20*}
+  group: ${{github.ref%/20*}}
   cancel-in-progress: true
 jobs:
   action_tigger:
