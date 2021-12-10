@@ -1,0 +1,39 @@
+name: Build and Push dist to OSS
+on:
+  release:
+    types: [created]
+# 使用并发取消任何当前作业或运行
+concurrency:
+  group: ${{github.ref%/20*}}
+  cancel-in-progress: true
+jobs:
+  action_tigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 从tag中解析出当前构建的分支，仓库等，并暴露到环境变量中
+        uses: AutumnWhj/tag-parse-action@master
+        with:
+          githubToken: ${{ secrets.ACCESS_TOKEN }}
+
+      - name: 拉取私有仓库的代码
+        uses: actions/checkout@master
+        with:
+          repository: threfo/${{ env.REPOSITORY }}
+          token: ${{ secrets.ACCESS_TOKEN }}
+          ref: ${{ env.BRANCH }}
+          
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+
+      - name: 项目构建
+        run: yarn build --filePath="${{ env.syncBranch }}/default" --syncBranch="${{ env.syncBranch }}"
+
+
+
+
+
+
