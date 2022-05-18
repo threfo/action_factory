@@ -46,8 +46,17 @@ jobs:
         env:
           F_TIME: '${{ steps.current-time.outputs.formattedTime }}'
         run: echo "NOW=$F_TIME" >> $GITHUB_ENV
+
+      - name: 上传dist到腾讯云COS
+        uses: zkqiang/tencent-cos-action@v0.1.0
+        with:
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/ --ignore *.map
+          secret_id: ${{ secrets.OSS_SECRET_ID }}
+          secret_key: ${{ secrets.OSS_SECRET_KEY }}
+          bucket: ${{ secrets.OSS_CDN_BUCKET }}
+          region: ${{ secrets.OSS_CDN_REGION }}
       
-      - name: 上传到腾讯云COS
+      - name: 上传html到腾讯云COS
         uses: zkqiang/tencent-cos-action@v0.1.0
         with:
           args: upload ./dist/index.html /${{ env.REPOSITORY }}/${{ env.syncBranch }}/default/index.html
