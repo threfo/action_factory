@@ -50,7 +50,7 @@ jobs:
       - name: 上传dist到腾讯云COS
         uses: zkqiang/tencent-cos-action@v0.1.0
         with:
-          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/ --ignore *.map
+          args: upload -rs ./dist/ /${{ env.REPOSITORY }}/dist/ --ignore *.map
           secret_id: ${{ secrets.OSS_SECRET_ID }}
           secret_key: ${{ secrets.OSS_SECRET_KEY }}
           bucket: ${{ secrets.OSS_CDN_BUCKET }}
