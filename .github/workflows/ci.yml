@@ -30,7 +30,7 @@ jobs:
           node-version: '14.x'
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        uses: bahmutov/npm-install@v1.8.24
 
       - name: 项目构建
         run: yarn build --filePath="${{ env.syncBranch }}/default" --syncBranch="${{ env.syncBranch }}"
