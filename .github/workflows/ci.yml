@@ -32,6 +32,11 @@ jobs:
       - name: Install dependencies
         uses: borales/actions-yarn@v4
         with:
+          cmd: config set strict-ssl false
+      
+      - name: Install dependencies
+        uses: borales/actions-yarn@v4
+        with:
           cmd: install
 
       - name: 项目构建
