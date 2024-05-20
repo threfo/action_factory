@@ -43,6 +43,9 @@ jobs:
             ${{ runner.os }}-yarn-store-
      # - name: Set TAOBAO registry
      #   run: yarn config set registry http://r.cnpmjs.org/
+      - name: Close ssl check
+        run: yarn config set strict-ssl false
+
       - name: Install dependencies
         run: yarn install
 
