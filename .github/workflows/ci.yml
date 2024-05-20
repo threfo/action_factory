@@ -26,7 +26,21 @@ jobs:
           ref: ${{ env.BRANCH }}
           
       - uses: volta-cli/action@v4
+        name: Install volta
 
+
+      - name: Get store directory
+        id: yarn-cache
+        run: |
+          echo "::set-output name=yarn_cache_dir::$(yarn store path)"
+
+      - uses: actions/cache@v3
+        name: Setup yarn cache
+        with:
+          path: ${{ steps.yarn-cache.outputs.yarn_cache_dir }}
+          key: ${{ runner.os }}-yarn-store-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-store-
      # - name: Set TAOBAO registry
      #   run: yarn config set registry http://r.cnpmjs.org/
       - name: Install dependencies
