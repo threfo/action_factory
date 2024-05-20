@@ -27,8 +27,8 @@ jobs:
           
       - uses: volta-cli/action@v4
 
-      - name: Set TAOBAO registry
-        run: yarn config set registry http://r.cnpmjs.org/
+     # - name: Set TAOBAO registry
+     #   run: yarn config set registry http://r.cnpmjs.org/
       - name: Install dependencies
         run: yarn install
 
