@@ -19,7 +19,7 @@ jobs:
           githubToken: ${{ secrets.ACCESS_TOKEN }}
 
       - name: 拉取私有仓库的代码
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
         with:
           repository: threfo/${{ env.REPOSITORY }}
           token: ${{ secrets.ACCESS_TOKEN }}
